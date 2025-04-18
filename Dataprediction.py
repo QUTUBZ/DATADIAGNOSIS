@@ -1,5 +1,4 @@
 
-
 # import streamlit as st
 # import pandas as pd
 # from sklearn.impute import SimpleImputer
@@ -14,16 +13,16 @@
 # )
 # from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 # from sklearn.svm import SVC, SVR
-# from sklearn.neighbors import KNeighborsClassifier
 # from sklearn.linear_model import LinearRegression
 # from sklearn.preprocessing import OneHotEncoder
 # from sklearn.compose import ColumnTransformer
 # from sklearn.pipeline import Pipeline
+# from xgboost import XGBClassifier
 
-# # Configure page settings
+# # Page config
 # st.set_page_config(page_title="Smart ML Trainer", page_icon="🤖", layout="wide")
 
-# # Initialize session state
+# # Session state
 # if 'data' not in st.session_state:
 #     st.session_state.update({
 #         'data': None,
@@ -53,7 +52,6 @@
 # def evaluate_model(model, X_test, y_test, problem_type):
 #     y_pred = model.predict(X_test)
 #     metrics = {}
-    
 #     if problem_type == "Classification":
 #         metrics.update({
 #             'accuracy': accuracy_score(y_test, y_pred),
@@ -73,7 +71,6 @@
 #     st.title("🧠 Smart ML Training Platform")
 #     st.markdown("Automated machine learning with intelligent problem detection")
 
-#     # Data Upload Section
 #     with st.expander("📤 Data Upload", expanded=True):
 #         uploaded_file = st.file_uploader("Upload dataset (CSV/Excel)", type=["csv", "xlsx"])
 #         if uploaded_file:
@@ -85,7 +82,6 @@
 #     if st.session_state.data is not None:
 #         df = st.session_state.data
         
-#         # Data Preprocessing
 #         with st.expander("🔧 Data Preparation", expanded=True):
 #             st.subheader("Configure Prediction Task")
 #             target_col = st.selectbox("Select Target Variable", df.columns)
@@ -94,134 +90,96 @@
 #             if target_col and feature_cols:
 #                 X = df[feature_cols]
 #                 y = df[target_col]
-                
-#                 # Detect problem type
+
 #                 st.session_state.problem_type = detect_problem_type(y)
 #                 st.info(f"Detected Problem Type: {st.session_state.problem_type}")
 
-#                 # Encode target variable if classification
 #                 if st.session_state.problem_type == "Classification":
 #                     le = LabelEncoder()
 #                     y = le.fit_transform(y)
 #                     st.session_state.target_encoder = le
 
-#                 # Identify numeric and categorical features
 #                 numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
 #                 categorical_features = X.select_dtypes(include=['object', 'category']).columns
-                
-#                 # Store feature ranges for prediction inputs
+
 #                 st.session_state.feature_ranges = {
 #                     col: (X[col].min(), X[col].max()) 
 #                     for col in numeric_features
 #                 }
 
-#                 # Create preprocessing pipeline
 #                 numeric_transformer = Pipeline(steps=[
 #                     ('imputer', SimpleImputer(strategy='mean')),
-#                     ('scaler', StandardScaler())])
+#                     ('scaler', StandardScaler())
+#                 ])
 
 #                 categorical_transformer = Pipeline(steps=[
 #                     ('imputer', SimpleImputer(strategy='most_frequent')),
-#                     ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+#                     ('onehot', OneHotEncoder(handle_unknown='ignore'))
+#                 ])
 
 #                 preprocessor = ColumnTransformer(
 #                     transformers=[
 #                         ('num', numeric_transformer, numeric_features),
-#                         ('cat', categorical_transformer, categorical_features)])
+#                         ('cat', categorical_transformer, categorical_features)
+#                     ]
+#                 )
 
 #                 st.session_state.preprocessor = preprocessor
 
-#                 # Train-test split (fixed at 20% test size)
 #                 X_train, X_test, y_train, y_test = train_test_split(
 #                     X, y, test_size=0.2, random_state=42
 #                 )
 
-#                 # Preprocess the data
 #                 X_train_scaled = preprocessor.fit_transform(X_train)
 #                 X_test_scaled = preprocessor.transform(X_test)
 
 #         # Model Training
 #         if target_col and feature_cols:
 #             with st.expander("🤖 Model Training", expanded=True):
-#                 st.subheader("Model Selection")
+#                 st.subheader("Training Models...")
+
 #                 models = {}
-
 #                 if st.session_state.problem_type == "Classification":
-#                     col1, col2, col3 = st.columns(3)
-#                     with col1:
-#                         if st.checkbox("Random Forest"):
-#                             models['Random Forest'] = RandomForestClassifier(
-#                                 n_estimators=100,
-#                                 max_depth=None,
-#                                 random_state=42
-#                             )
-#                     with col2:
-#                         if st.checkbox("SVM"):
-#                             models['SVM'] = SVC(
-#                                 C=1.0,
-#                                 kernel='rbf',
-#                                 probability=True
-#                             )
-#                     with col3:
-#                         if st.checkbox("KNN"):
-#                             models['KNN'] = KNeighborsClassifier(
-#                                 n_neighbors=5,
-#                                 weights='uniform'
-#                             )
-#                 else:  # Regression
-#                     col1, col2 = st.columns(2)
-#                     with col1:
-#                         if st.checkbox("Random Forest Regressor"):
-#                             models['Random Forest'] = RandomForestRegressor(
-#                                 n_estimators=100,
-#                                 max_depth=None,
-#                                 random_state=42
-#                             )
-#                     with col2:
-#                         if st.checkbox("Linear Regression"):
-#                             models['Linear Regression'] = LinearRegression()
+#                     models = {
+#                         'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
+#                         'SVM': SVC(kernel='rbf', probability=True),
+#                         'XGBoost': XGBClassifier(use_label_encoder=False, eval_metric='mlogloss')
+#                     }
+#                 else:
+#                     models = {
+#                         'Random Forest': RandomForestRegressor(n_estimators=100, random_state=42),
+#                         'Linear Regression': LinearRegression()
+#                     }
 
-#                 if st.button("Train Selected Models") and models:
-#                     progress_bar = st.progress(0)
-#                     metrics = []
-                    
-#                     for i, (name, model) in enumerate(models.items()):
-#                         with st.spinner(f"Training {name}..."):
-#                             trained_model = train_model(model, X_train_scaled, y_train)
-#                             model_metrics = evaluate_model(
-#                                 trained_model, X_test_scaled, y_test,
-#                                 st.session_state.problem_type
-#                             )
-#                             metrics.append({
-#                                 'Model': name,
-#                                 **model_metrics
-#                             })
-#                             st.session_state.models[name] = trained_model
+#                 st.info(f"The following models are being trained: {', '.join(models.keys())}")
+
+#                 progress_bar = st.progress(0)
+#                 metrics = []
+
+#                 for i, (name, model) in enumerate(models.items()):
+#                     with st.spinner(f"Training {name}..."):
+#                         trained_model = train_model(model, X_train_scaled, y_train)
+#                         model_metrics = evaluate_model(
+#                             trained_model, X_test_scaled, y_test,
+#                             st.session_state.problem_type
+#                         )
+#                         metrics.append({'Model': name, **model_metrics})
+#                         st.session_state.models[name] = trained_model
 #                         progress_bar.progress((i+1)/len(models))
-                    
-#                     # Display results
-#                     metrics_df = pd.DataFrame(metrics)
-#                     st.subheader("Model Performance Comparison")
-                    
-#                     if st.session_state.problem_type == "Classification":
-#                         fig = px.bar(metrics_df, x='Model', y='accuracy', 
-#                                     title='Model Accuracy Comparison')
-#                     else:
-#                         fig = px.bar(metrics_df, x='Model', y='r2', 
-#                                     title='Model R² Score Comparison')
-#                     st.plotly_chart(fig)
-                    
-#                     st.dataframe(metrics_df.style.highlight_max(color='lightgreen', axis=0))
-                    
-#                     # Determine best model
-#                     if st.session_state.problem_type == "Classification":
-#                         best_metric = 'accuracy'
-#                     else:
-#                         best_metric = 'r2'
-                    
-#                     best_model_name = metrics_df.loc[metrics_df[best_metric].idxmax(), 'Model']
-#                     st.session_state.best_model = st.session_state.models[best_model_name]
-#                     st.success(f"Best Performing Model: {best_model_name}")
+
+#                 metrics_df = pd.DataFrame(metrics)
+#                 st.subheader("Model Performance Comparison")
+#                 if st.session_state.problem_type == "Classification":
+#                     fig = px.bar(metrics_df, x='Model', y='accuracy', title='Model Accuracy Comparison')
+#                 else:
+#                     fig = px.bar(metrics_df, x='Model', y='r2', title='Model R² Score Comparison')
+#                 st.plotly_chart(fig)
+#                 st.dataframe(metrics_df.style.highlight_max(color='lightgreen', axis=0))
+
+#                 best_metric = 'accuracy' if st.session_state.problem_type == "Classification" else 'r2'
+#                 best_model_name = metrics_df.loc[metrics_df[best_metric].idxmax(), 'Model']
+#                 st.session_state.best_model = st.session_state.models[best_model_name]
+#                 st.success(f"Best Performing Model: {best_model_name}")
 
 #         # Prediction Interface
 #         if st.session_state.best_model and st.session_state.preprocessor:
@@ -229,7 +187,7 @@
 #                 st.subheader("Prediction Input")
 #                 input_data = {}
 #                 cols = st.columns(2)
-                
+
 #                 for i, col in enumerate(feature_cols):
 #                     with cols[i % 2]:
 #                         if col in st.session_state.feature_ranges:
@@ -241,9 +199,8 @@
 #                                 value=float((min_val + max_val)/2)
 #                             )
 #                         else:
-#                             # Handle categorical inputs
 #                             unique_values = df[col].unique()
-#                             if len(unique_values) < 20:  # For reasonable number of categories
+#                             if len(unique_values) < 20:
 #                                 input_data[col] = st.selectbox(f"Select {col}", unique_values)
 #                             else:
 #                                 input_data[col] = st.text_input(f"Enter {col}")
@@ -253,11 +210,11 @@
 #                         input_df = pd.DataFrame([input_data])
 #                         input_scaled = st.session_state.preprocessor.transform(input_df)
 #                         prediction = st.session_state.best_model.predict(input_scaled)
-                        
+
 #                         if st.session_state.problem_type == "Classification":
-#                             probability = st.session_state.best_model.predict_proba(input_scaled).max()
+#                             prob = st.session_state.best_model.predict_proba(input_scaled).max()
 #                             decoded_pred = st.session_state.target_encoder.inverse_transform(prediction)
-#                             st.success(f"Prediction: {decoded_pred[0]} (Confidence: {probability:.2%})")
+#                             st.success(f"Prediction: {decoded_pred[0]} (Confidence: {prob:.2%})")
 #                         else:
 #                             st.success(f"Predicted Value: {prediction[0]:.2f}")
 #                     except Exception as e:
@@ -356,6 +313,12 @@ def main():
             if target_col and feature_cols:
                 X = df[feature_cols]
                 y = df[target_col]
+
+                # Silent handling of missing target values
+                if y.isna().any():
+                    valid_mask = y.notna()
+                    X = X[valid_mask]
+                    y = y[valid_mask]
 
                 st.session_state.problem_type = detect_problem_type(y)
                 st.info(f"Detected Problem Type: {st.session_state.problem_type}")
