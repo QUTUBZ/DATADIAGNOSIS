@@ -146,7 +146,7 @@ import base64
 from datetime import datetime
 
 def main():
-    st.set_page_config(page_title="Dataset Insights", page_icon="📊", layout="wide")
+    # st.set_page_config(page_title="Dataset Insights", page_icon="📊", layout="wide")
 
     # Custom CSS for enhanced UI
     st.markdown("""

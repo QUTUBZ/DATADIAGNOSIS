@@ -243,19 +243,20 @@ from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 # Page config
-st.set_page_config(page_title="Smart ML Trainer", page_icon="🤖", layout="wide")
+# st.set_page_config(page_title="Smart ML Trainer", page_icon="🤖", layout="wide")
 
 # Session state
-if 'data' not in st.session_state:
-    st.session_state.update({
-        'data': None,
-        'models': {},
-        'best_model': None,
-        'problem_type': None,
-        'feature_ranges': {},
-        'preprocessor': None,
-        'target_encoder': None
-    })
+for key, default in {
+    'data': None,
+    'models': {},
+    'best_model': None,
+    'problem_type': None,
+    'feature_ranges': {},
+    'preprocessor': None,
+    'target_encoder': None
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 def load_data(uploaded_file):
     if uploaded_file.name.endswith('.csv'):

@@ -4,7 +4,7 @@ import numpy as np
 from io import BytesIO
 
 # Configure page settings
-st.set_page_config(page_title="Data Cleaning Platform", page_icon=":bar_chart:", layout="wide")
+# st.set_page_config(page_title="Data Cleaning Platform", page_icon=":bar_chart:", layout="wide")
 
 # Initialize session state
 if 'data' not in st.session_state:
